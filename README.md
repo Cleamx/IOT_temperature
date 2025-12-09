@@ -23,7 +23,7 @@ VPD = évapotranspiration
 - [x] Envoie des données vers le serveur MQTT
 - [x] Récupération des doonnées du serveur MQTT avec un script python
 - [x] Ajout des données dans une base de données Postgres
-- [ ] Ajout d'une page HTML pour voir les données en db
+- [x] Ajout d'une page HTML pour voir les données en db
 
 ## V2
 - [ ] Ajout de grafana dans docker

@@ -52,6 +52,25 @@ services:
       - iot_network
     restart: unless-stopped
 
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: iot_web
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-iot_data}
+      DB_USER: ${DB_USER:-iot_user}
+      DB_PASSWORD: ${DB_PASSWORD:-iot_password}
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+    networks:
+      - iot_network
+    restart: unless-stopped
+
 networks:
   iot_network:
     driver: bridge
