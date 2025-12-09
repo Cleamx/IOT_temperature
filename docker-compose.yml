@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USER:-iot_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-iot_password}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/grafana-postgresql-datasource/data
     ports:
       - "${DB_PORT:-5433}:5432"
     networks:
@@ -63,7 +63,26 @@ services:
       DB_USER: ${DB_USER:-iot_user}
       DB_PASSWORD: ${DB_PASSWORD:-iot_password}
     ports:
-      - "5000:5000"
+      - "5001:5000"
+    depends_on:
+      - postgres
+    networks:
+      - iot_network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: iot_grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - postgres
     networks:
@@ -78,4 +97,4 @@ volumes:
   postgres_data:
   mqtt_data:
   mqtt_log:
-  pgadmin_data:
+  grafana_data:

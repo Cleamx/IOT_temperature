@@ -1,6 +1,6 @@
 # IOT Temperature Monitoring System
 
-Un système de monitoring de température en temps réel utilisant un ESP32, MQTT, PostgreSQL et Docker.
+Un système de monitoring de température en temps réel utilisant un ESP32, MQTT, grafana-postgresql-datasource et Docker.
 
 Ce projet à pour but de savoir grâce au calcul de l'évapotranspiration d'une plante quand est ce qu'il faut l'arroser.
 
@@ -26,8 +26,8 @@ VPD = évapotranspiration
 - [x] Ajout d'une page HTML pour voir les données en db
 
 ## V2
-- [ ] Ajout de grafana dans docker
-- [ ] Connection de grafana avec postgress
+- [x] Ajout de grafana dans docker
+- [x] Connection de grafana avec postgress
 - [ ] Envoie de notification avec un webhook (quand est ce qu'il faut arroser)
 
 ## V3

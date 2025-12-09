@@ -1,10 +1,8 @@
 import os
 import json
 import time
-from datetime import datetime
 import paho.mqtt.client as mqtt
 import psycopg2
-from psycopg2.extras import RealDictCursor
 import logging
 
 logging.basicConfig(
@@ -29,7 +27,7 @@ DB_PASSWORD = os.getenv('DB_PASSWORD', 'iot_password')
 def create_database_connection():
     max_retries = 5
     retry_delay = 5
-    
+
     for attempt in range(max_retries):
         try:
             conn = psycopg2.connect(
@@ -42,7 +40,8 @@ def create_database_connection():
             logger.info("Connexion à la base de données établie")
             return conn
         except psycopg2.OperationalError as e:
-            logger.warning(f"Tentative {attempt + 1}/{max_retries} échouée: {e}")
+            logger.warning(
+                f"Tentative {attempt + 1}/{max_retries} échouée: {e}")
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
             else:
@@ -52,7 +51,7 @@ def create_database_connection():
 
 def init_database(conn):
     cursor = conn.cursor()
-    
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS temperature_data (
             id SERIAL PRIMARY KEY,
@@ -64,41 +63,42 @@ def init_database(conn):
             raw_data JSONB
         )
     """)
-    
+
     cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_timestamp 
+        CREATE INDEX IF NOT EXISTS idx_timestamp
         ON temperature_data(timestamp DESC)
     """)
-    
+
     conn.commit()
     cursor.close()
     logger.info("Base de données initialisée")
 
 
 def insert_data(conn, topic, payload):
-    """Insère les données MQTT dans la base de données"""
     cursor = conn.cursor()
-    
+
     try:
         try:
             data = json.loads(payload)
         except json.JSONDecodeError:
             logger.warning(f"Payload non-JSON reçu: {payload}")
             data = {"raw_value": payload}
-        
+
         temperature = data.get('temperature', data.get('temp'))
         humidity = data.get('humidity', data.get('hum'))
         evapo = data.get('evapo', data.get('VPD'))
-        
+
         cursor.execute("""
-            INSERT INTO temperature_data 
+            INSERT INTO temperature_data
             (temperature, humidity, evapo, topic, raw_data)
             VALUES (%s, %s, %s, %s, %s)
         """, (temperature, humidity, evapo, topic, json.dumps(data)))
-        
+
         conn.commit()
-        logger.info(f"Données insérées: temp={temperature}, hum={humidity}, evapo={evapo}")
-        
+        logger.info(
+            f"Données insérées: \n"
+            f"temp={temperature}, hum={humidity}, evapo={evapo}")
+
     except Exception as e:
         logger.error(f"Erreur lors de l'insertion: {e}")
         conn.rollback()
@@ -116,8 +116,9 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_message(client, userdata, msg):
-    logger.info(f"Message reçu - Topic: {msg.topic}, Payload: {msg.payload.decode()}")
-    
+    logger.info(
+        f"Message reçu - Topic: {msg.topic}, Payload: {msg.payload.decode()}")
+
     db_conn = userdata.get('db_conn')
     if db_conn:
         insert_data(db_conn, msg.topic, msg.payload.decode())
@@ -126,30 +127,38 @@ def on_message(client, userdata, msg):
 def on_disconnect(client, userdata, rc):
     if rc != 0:
         logger.warning(f"Déconnexion inattendue du broker MQTT, code: {rc}")
+        logger.info("Tentative de reconnexion...")
+        try:
+            client.reconnect()
+            logger.info("Reconnexion réussie")
+        except Exception as e:
+            logger.error(f"Échec de reconnexion: {e}")
 
 
 def main():
     logger.info("Démarrage du service MQTT to Database")
-    
+
     db_conn = create_database_connection()
     init_database(db_conn)
-    
+
     client = mqtt.Client(userdata={'db_conn': db_conn})
     client.on_connect = on_connect
     client.on_message = on_message
     client.on_disconnect = on_disconnect
-    
+
+    client.reconnect_delay_set(min_delay=1, max_delay=120)
+
     if MQTT_USERNAME and MQTT_PASSWORD:
         client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
-    
+
     try:
         client.connect(MQTT_BROKER, MQTT_PORT, 60)
     except Exception as e:
         logger.error(f"Erreur de connexion au broker MQTT: {e}")
         return
-    
+
     try:
-        client.loop_forever()
+        client.loop_forever(retry_first_connection=True)
     except KeyboardInterrupt:
         logger.info("Arrêt du service...")
     finally:
