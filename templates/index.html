@@ -247,25 +247,21 @@
     </div>
 
     <script>
-        // Fonction pour formater les nombres
         function formatNumber(num, decimals = 1) {
             if (num === null || num === undefined) return '-';
             return Number(num).toFixed(decimals);
         }
 
-        // Fonction pour obtenir la classe CSS selon la température
         function getTempClass(temp) {
             if (temp === null) return '';
             return temp >= 0 ? 'temp-positive' : 'temp-negative';
         }
 
-        // Fonction pour obtenir la classe CSS selon l'humidité
         function getHumidityClass(humidity) {
             if (humidity === null) return '';
             return humidity < 40 ? 'humidity-low' : 'humidity-high';
         }
 
-        // Charger les statistiques
         async function loadStats() {
             try {
                 const response = await fetch('/api/stats');
@@ -281,7 +277,6 @@
             }
         }
 
-        // Charger les données du tableau
         async function loadData() {
             try {
                 const response = await fetch('/api/data?limit=100');
@@ -311,16 +306,13 @@
             }
         }
 
-        // Actualiser toutes les données
         function refreshData() {
             loadStats();
             loadData();
         }
 
-        // Charger les données au démarrage
         refreshData();
 
-        // Auto-actualisation toutes les 5 secondes
         setInterval(refreshData, 5000);
     </script>
 </body>
