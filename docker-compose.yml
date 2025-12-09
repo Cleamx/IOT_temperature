@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: iot_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-iot_data}
+      POSTGRES_USER: ${DB_USER:-iot_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-iot_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    networks:
+      - iot_network
+    restart: unless-stopped
+
+  mqtt:
+    image: emqx/emqx:latest
+    container_name: iot_mqtt
+    ports:
+      - "${MQTT_PORT:-1883}:1883"      
+      - "8083:8083"                     
+      - "18083:18083"                   
+    environment:
+      EMQX_NAME: iot_mqtt
+      EMQX_HOST: 127.0.0.1
+    volumes:
+      - mqtt_data:/opt/emqx/data
+      - mqtt_log:/opt/emqx/log
+    networks:
+      - iot_network
+    restart: unless-stopped
+
+  mqtt_to_db:
+    build: .
+    container_name: iot_mqtt_to_db
+    environment:
+      MQTT_BROKER: ${MQTT_BROKER:-mqtt}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_TOPIC: ${MQTT_TOPIC:-temperature/#}
+      MQTT_USERNAME: ${MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-iot_data}
+      DB_USER: ${DB_USER:-iot_user}
+      DB_PASSWORD: ${DB_PASSWORD:-iot_password}
+    depends_on:
+      - postgres
+      - mqtt
+    networks:
+      - iot_network
+    restart: unless-stopped
+
+networks:
+  iot_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mqtt_data:
+  mqtt_log:
+  pgadmin_data:
