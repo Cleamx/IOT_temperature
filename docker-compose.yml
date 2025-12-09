@@ -53,10 +53,9 @@ services:
     restart: unless-stopped
 
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile.web
+    build: .
     container_name: iot_web
+    command: python web_app.py
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
