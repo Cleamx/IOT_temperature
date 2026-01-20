@@ -18,9 +18,9 @@ services:
     image: emqx/emqx:latest
     container_name: iot_mqtt
     ports:
-      - "${MQTT_PORT:-1883}:1883"      
-      - "8083:8083"                     
-      - "18083:18083"                   
+      - "${MQTT_PORT:-1883}:1883"
+      - "8083:8083"
+      - "18083:18083"
     environment:
       EMQX_NAME: iot_mqtt
       EMQX_HOST: 127.0.0.1

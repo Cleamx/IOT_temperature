@@ -109,10 +109,14 @@ def insert_data(conn, topic, payload):
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         logger.info(f"Connecté au broker MQTT: {MQTT_BROKER}:{MQTT_PORT}")
-        client.subscribe(MQTT_TOPIC)
-        logger.info(f"Abonné au topic: {MQTT_TOPIC}")
+        result, mid = client.subscribe(MQTT_TOPIC)
+        logger.info(f"Demande d'abonnement au topic: {MQTT_TOPIC} (result={result}, mid={mid})")
     else:
         logger.error(f"Échec de connexion au broker MQTT, code: {rc}")
+
+
+def on_subscribe(client, userdata, mid, granted_qos):
+    logger.info(f"Abonnement confirmé (mid={mid}, qos={granted_qos})")
 
 
 def on_message(client, userdata, msg):
@@ -145,6 +149,7 @@ def main():
     client.on_connect = on_connect
     client.on_message = on_message
     client.on_disconnect = on_disconnect
+    client.on_subscribe = on_subscribe
 
     client.reconnect_delay_set(min_delay=1, max_delay=120)
 
@@ -152,7 +157,7 @@ def main():
         client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 
     try:
-        client.connect(MQTT_BROKER, MQTT_PORT, 60)
+        client.connect(MQTT_BROKER, MQTT_PORT, 120)
     except Exception as e:
         logger.error(f"Erreur de connexion au broker MQTT: {e}")
         return
